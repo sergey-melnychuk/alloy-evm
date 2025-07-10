@@ -28,13 +28,16 @@ op-alloy-consensus = { workspace = true, optional = true }
 auto_impl.workspace = true
 derive_more.workspace = true
 thiserror.workspace = true
+zucchero = { version = "1.0.0", optional = true }
+once_cell = { version = "1.21.3", optional = true }
+tracing = "0.1.41"
 
 [dev-dependencies]
 alloy-primitives = { workspace = true, features = ["serde"] }
 serde_json.workspace = true
 
 [features]
-default = ["std"]
+default = ["std", "live-tracing"]
 secp256k1 = [
     "std",
     "alloy-consensus/secp256k1",
@@ -54,3 +57,4 @@ std = [
 op = ["op-revm", "op-alloy-consensus"]
 overrides = ["dep:alloy-rpc-types-eth"]
 call-util = ["overrides"]
+live-tracing = ["dep:zucchero", "dep:once_cell"]

@@ -105,6 +105,7 @@ where
         Ok(())
     }
 
+    // MARKER: execute tx
     fn execute_transaction_with_commit_condition(
         &mut self,
         tx: impl ExecutableTx<Self>,
@@ -128,6 +129,8 @@ where
             .transact(tx)
             .map_err(|err| BlockExecutionError::evm(err, tx.tx().trie_hash()))?;
 
+        // MARKER: tracer.on_tx_state
+
         if !f(&result).should_commit() {
             return Ok(None);
         }
@@ -135,6 +138,7 @@ where
         self.system_caller.on_state(StateChangeSource::Transaction(self.receipts.len()), &state);
 
         let gas_used = result.gas_used();
+        // MARKER: tracer.on_tx_gas
 
         // append gas used
         self.gas_used += gas_used;
@@ -147,6 +151,7 @@ where
             state: &state,
             cumulative_gas_used: self.gas_used,
         }));
+        // MARKER: tracer.on_tx_receipt
 
         // Commit the state changes.
         self.evm.db_mut().commit(state);
@@ -183,6 +188,7 @@ where
             self.ctx.ommers,
             self.ctx.withdrawals.as_deref(),
         );
+        // MARKER: tracer.on_balance
 
         // Irregular state change at Ethereum DAO hardfork
         if self

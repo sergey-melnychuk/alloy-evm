@@ -35,3 +35,23 @@ mod either;
 #[cfg(feature = "op")]
 pub use op_revm;
 pub use revm;
+
+#[cfg(feature = "live-tracing")]
+/// live tracing module
+pub mod tracer {
+
+    /// live tracing state
+    #[derive(Clone, Default, Debug)]
+    pub struct Tracer {
+        /// live tracing logs
+        pub log: Vec<String>,
+    }
+
+    #[allow(missing_docs)]
+    pub mod wrapper {
+        use super::*;
+        zucchero::init!(Tracer, trace);
+    }
+
+    pub use wrapper::trace;
+}

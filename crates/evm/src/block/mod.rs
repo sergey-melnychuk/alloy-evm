@@ -193,7 +193,8 @@ pub trait BlockExecutor {
     ///
     /// Returns [`None`] if committing changes from the transaction should be skipped via
     /// [`CommitChanges::No`], otherwise returns the gas used by the transaction.
-    fn execute_transaction_with_commit_condition(
+    // MARKER: execute tx
+    fn execute_transaction_with_commit_condition( 
         &mut self,
         tx: impl ExecutableTx<Self>,
         f: impl FnOnce(&ExecutionResult<<Self::Evm as Evm>::HaltReason>) -> CommitChanges,
@@ -255,6 +256,7 @@ pub trait BlockExecutor {
     ///
     /// let result = executor.execute_block(recovered_txs.iter())?;
     /// ```
+    // MARKER: block execution
     fn execute_block(
         mut self,
         transactions: impl IntoIterator<Item = impl ExecutableTx<Self>>,
@@ -264,8 +266,44 @@ pub trait BlockExecutor {
     {
         self.apply_pre_execution_changes()?;
 
+        // MARKER: tracer.before_block()
+        #[cfg(feature = "live-tracing")]
+        {
+            let n = self.evm().block().number.to_string();
+            crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: block: {n} / BEFORE")));
+        }
+
+        #[cfg(feature = "live-tracing")]
+        let mut index: usize = 0;
+
         for tx in transactions {
+            // MARKER: tracer.before_tx()
+            #[cfg(feature = "live-tracing")]
+            {
+                let _tx: <Self::Evm as Evm>::Tx = tx.into_tx_env();
+                crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: tx: {index}")));
+                index += 1;
+            }
+
             self.execute_transaction(tx)?;
+
+            // MARKER: tracer.after_block()
+        }
+
+        // MARKER: tracer.after_block()
+        #[cfg(feature = "live-tracing")]
+        {
+            let mut tracer = crate::tracer::trace(|tracer| {
+                let copy = tracer.clone();
+                *tracer = Default::default();
+                copy
+            });
+
+            let n = self.evm().block().number.to_string();
+            tracer.log.push(format!("LOOKHERE: block: {n} / AFTER"));
+            for log in &tracer.log {
+                tracing::info!("{log}");
+            }
         }
 
         self.apply_post_execution_changes()
