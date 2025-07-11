@@ -259,10 +259,11 @@ pub trait BlockExecutor {
     // MARKER: block execution
     fn execute_block(
         mut self,
-        transactions: impl IntoIterator<Item = impl ExecutableTx<Self>>,
+        transactions: impl IntoIterator<Item = impl ExecutableTx<Self> + std::fmt::Debug>,
     ) -> Result<BlockExecutionResult<Self::Receipt>, BlockExecutionError>
     where
         Self: Sized,
+        <<Self as BlockExecutor>::Evm as crate::evm::Evm>::Tx: std::fmt::Debug,
     {
         self.apply_pre_execution_changes()?;
 
@@ -280,8 +281,8 @@ pub trait BlockExecutor {
             // MARKER: tracer.before_tx()
             #[cfg(feature = "live-tracing")]
             {
-                let _tx: <Self::Evm as Evm>::Tx = tx.into_tx_env();
-                crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: tx: {index}")));
+                let env = tx.into_tx_env();
+                crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: TX[{index}]: {env:?}")));
                 index += 1;
             }
 
