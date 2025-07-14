@@ -270,8 +270,9 @@ pub trait BlockExecutor {
         // MARKER: tracer.before_block()
         #[cfg(feature = "live-tracing")]
         {
-            let n = self.evm().block().number.to_string();
-            crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: block: {n} / BEFORE")));
+            let block_number = self.evm().block().number.to_string();
+            tracing::info!("LOOKHERE: block: {block_number} / AFTER");
+            crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: block: {block_number} / BEFORE")));
         }
 
         #[cfg(feature = "live-tracing")]
@@ -281,30 +282,22 @@ pub trait BlockExecutor {
             // MARKER: tracer.before_tx()
             #[cfg(feature = "live-tracing")]
             {
-                let env = tx.into_tx_env();
-                crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: TX[{index}]: {env:?}")));
+                tracing::info!(index, "LOOKHERE: tracing");
+                tracing::info!(?tx, "LOOKHERE: tracing");
+                crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: TX[{index}]: {tx:?}")));
                 index += 1;
             }
 
             self.execute_transaction(tx)?;
-
             // MARKER: tracer.after_block()
         }
 
         // MARKER: tracer.after_block()
         #[cfg(feature = "live-tracing")]
         {
-            let mut tracer = crate::tracer::trace(|tracer| {
-                let copy = tracer.clone();
-                *tracer = Default::default();
-                copy
-            });
-
-            let n = self.evm().block().number.to_string();
-            tracer.log.push(format!("LOOKHERE: block: {n} / AFTER"));
-            for log in &tracer.log {
-                tracing::info!("{log}");
-            }
+            let logs = crate::tracer::trace(|tracer| tracer.log.len());
+            let block_number = self.evm().block().number.to_string();
+            tracing::info!(logs, "LOOKHERE: block: {block_number} / AFTER");
         }
 
         self.apply_post_execution_changes()
