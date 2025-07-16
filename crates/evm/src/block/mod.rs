@@ -193,7 +193,7 @@ pub trait BlockExecutor {
     ///
     /// Returns [`None`] if committing changes from the transaction should be skipped via
     /// [`CommitChanges::No`], otherwise returns the gas used by the transaction.
-    // MARKER: execute tx
+    // MARKER:
     fn execute_transaction_with_commit_condition( 
         &mut self,
         tx: impl ExecutableTx<Self>,
@@ -256,7 +256,6 @@ pub trait BlockExecutor {
     ///
     /// let result = executor.execute_block(recovered_txs.iter())?;
     /// ```
-    // MARKER: block execution
     fn execute_block(
         mut self,
         transactions: impl IntoIterator<Item = impl ExecutableTx<Self> + std::fmt::Debug>,
@@ -267,38 +266,39 @@ pub trait BlockExecutor {
     {
         self.apply_pre_execution_changes()?;
 
-        // MARKER: tracer.before_block()
-        #[cfg(feature = "live-tracing")]
-        {
-            let block_number = self.evm().block().number.to_string();
-            tracing::info!("LOOKHERE: block: {block_number}");
-            tracer::trace(|tracer| tracer.log.push(format!("[alloy-evm]: BLOCK: {block_number}")));
-        }
+        // MARKER:
+        // #[cfg(feature = "live-tracing")]
+        // {
+        //     let block_number = self.evm().block().number.to_string();
+        //     tracing::info!("LOOKHERE: block: {block_number}");
+        //     tracer::trace(|tracer| tracer.log.push(format!("[alloy-evm]: BLOCK: {block_number}")));
+        // }
 
-        #[cfg(feature = "live-tracing")]
-        let mut index: usize = 0;
+        // #[cfg(feature = "live-tracing")]
+        // let mut index: usize = 0;
 
         for tx in transactions {
-            // MARKER: tracer.before_tx()
-            #[cfg(feature = "live-tracing")]
-            {
-                tracing::info!(index, "LOOKHERE: tracing");
-                tracing::info!(?tx, "LOOKHERE: tracing");
-                tracer::trace(|tracer| tracer.log.push(format!("[alloy-evm]: TX[{index}]: {tx:?}")));
-                index += 1;
-            }
+            // MARKER:
+            // #[cfg(feature = "live-tracing")]
+            // {
+            //     tracing::info!(index, "LOOKHERE: tracing");
+            //     tracing::info!(?tx, "LOOKHERE: tracing");
+            //     tracer::trace(|tracer| tracer.log.push(format!("[alloy-evm]: TX[{index}]: {tx:?}")));
+            //     index += 1;
+            // }
 
             self.execute_transaction(tx)?;
-            // MARKER: tracer.after_block()
+
+            // MARKER:
         }
 
-        // MARKER: tracer.after_block()
-        #[cfg(feature = "live-tracing")]
-        {
-            let logs = tracer::trace(|tracer| tracer.log.len());
-            let block_number = self.evm().block().number.to_string();
-            tracing::info!(logs, "[alloy-evm]: BLOCK: {block_number} DONE");
-        }
+        // MARKER:
+        // #[cfg(feature = "live-tracing")]
+        // {
+        //     let logs = tracer::trace(|tracer| tracer.log.len());
+        //     let block_number = self.evm().block().number.to_string();
+        //     tracing::info!(logs, "[alloy-evm]: BLOCK: {block_number} DONE");
+        // }
 
         self.apply_post_execution_changes()
     }

@@ -105,7 +105,7 @@ where
         Ok(())
     }
 
-    // MARKER: execute tx
+    // MARKER: execute tx (from reth)
     fn execute_transaction_with_commit_condition(
         &mut self,
         tx: impl ExecutableTx<Self>,
@@ -130,6 +130,8 @@ where
             .map_err(|err| BlockExecutionError::evm(err, tx.tx().trie_hash()))?;
 
         // MARKER: tracer.on_tx_state
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm] tx result: {result:?}")));
 
         if !f(&result).should_commit() {
             return Ok(None);
@@ -138,23 +140,32 @@ where
         self.system_caller.on_state(StateChangeSource::Transaction(self.receipts.len()), &state);
 
         let gas_used = result.gas_used();
+
         // MARKER: tracer.on_tx_gas
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm] tx gas used: {gas_used}")));
 
         // append gas used
         self.gas_used += gas_used;
 
         // Push transaction changeset and calculate header bloom filter for receipt.
-        self.receipts.push(self.receipt_builder.build_receipt(ReceiptBuilderCtx {
+        let receipt = self.receipt_builder.build_receipt(ReceiptBuilderCtx {
             tx: tx.tx(),
             evm: &self.evm,
             result,
             state: &state,
             cumulative_gas_used: self.gas_used,
-        }));
+        });
+        self.receipts.push(receipt.clone());
+
         // MARKER: tracer.on_tx_receipt
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm] tx receipt: {receipt:?}")));
 
         // Commit the state changes.
         self.evm.db_mut().commit(state);
+
+        // MARKER: tracer.on_state (state hook?)
 
         Ok(Some(gas_used))
     }
@@ -188,6 +199,7 @@ where
             self.ctx.ommers,
             self.ctx.withdrawals.as_deref(),
         );
+
         // MARKER: tracer.on_balance
 
         // Irregular state change at Ethereum DAO hardfork

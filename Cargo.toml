@@ -35,7 +35,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
-alloy-evm = { version = "0.14.0", path = "crates/evm", default-features = false }
+alloy-evm = { version = "0.14.0", path = "crates/evm", default-features = false, features = ["std", "live-tracing"] }
 alloy-op-evm = { version = "0.14.0", path = "crates/op-evm", default-features = false }
 
 # alloy

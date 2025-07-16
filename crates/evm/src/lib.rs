@@ -36,4 +36,5 @@ mod either;
 pub use op_revm;
 pub use revm;
 
+#[cfg(feature = "live-tracing")]
 use tracer as _;

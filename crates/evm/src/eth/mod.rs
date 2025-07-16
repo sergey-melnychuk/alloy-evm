@@ -126,7 +126,7 @@ where
         self.cfg.chain_id
     }
 
-    // MARKER: tx exec
+    // MARKER:
     fn transact_raw(
         &mut self,
         tx: Self::Tx,
