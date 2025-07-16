@@ -271,8 +271,8 @@ pub trait BlockExecutor {
         #[cfg(feature = "live-tracing")]
         {
             let block_number = self.evm().block().number.to_string();
-            tracing::info!("LOOKHERE: block: {block_number} / AFTER");
-            crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: block: {block_number} / BEFORE")));
+            tracing::info!("LOOKHERE: block: {block_number}");
+            tracer::trace(|tracer| tracer.log.push(format!("[alloy-evm]: BLOCK: {block_number}")));
         }
 
         #[cfg(feature = "live-tracing")]
@@ -284,7 +284,7 @@ pub trait BlockExecutor {
             {
                 tracing::info!(index, "LOOKHERE: tracing");
                 tracing::info!(?tx, "LOOKHERE: tracing");
-                crate::tracer::trace(|tracer| tracer.log.push(format!("LOOKHERE: TX[{index}]: {tx:?}")));
+                tracer::trace(|tracer| tracer.log.push(format!("[alloy-evm]: TX[{index}]: {tx:?}")));
                 index += 1;
             }
 
@@ -295,9 +295,9 @@ pub trait BlockExecutor {
         // MARKER: tracer.after_block()
         #[cfg(feature = "live-tracing")]
         {
-            let logs = crate::tracer::trace(|tracer| tracer.log.len());
+            let logs = tracer::trace(|tracer| tracer.log.len());
             let block_number = self.evm().block().number.to_string();
-            tracing::info!(logs, "LOOKHERE: block: {block_number} / AFTER");
+            tracing::info!(logs, "[alloy-evm]: BLOCK: {block_number} DONE");
         }
 
         self.apply_post_execution_changes()

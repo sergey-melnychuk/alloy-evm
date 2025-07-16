@@ -28,8 +28,7 @@ op-alloy-consensus = { workspace = true, optional = true }
 auto_impl.workspace = true
 derive_more.workspace = true
 thiserror.workspace = true
-zucchero = { version = "1.0.0", optional = true }
-once_cell = { version = "1.21.3", optional = true }
+tracer = { workspace = true, optional = true }
 tracing = "0.1.41"
 
 [dev-dependencies]
@@ -57,4 +56,4 @@ std = [
 op = ["op-revm", "op-alloy-consensus"]
 overrides = ["dep:alloy-rpc-types-eth"]
 call-util = ["overrides"]
-live-tracing = ["dep:zucchero", "dep:once_cell"]
+live-tracing = ["dep:tracer"]
