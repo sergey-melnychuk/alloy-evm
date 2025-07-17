@@ -1,12 +1,12 @@
 //! Block execution abstraction.
 
 use crate::{
-    Database, Evm, EvmFactory, FromRecoveredTx, FromTxWithEncoded, IntoTxEnv, RecoveredTx,
+    eth::CustomInspector, Database, Evm, EvmFactory, FromRecoveredTx, FromTxWithEncoded, IntoTxEnv, RecoveredTx
 };
 use alloc::{boxed::Box, vec::Vec};
 use alloy_eips::eip7685::Requests;
 use revm::{
-    context::result::ExecutionResult, database::State, inspector::NoOpInspector, Inspector,
+    context::result::ExecutionResult, database::State, Inspector,
 };
 
 mod error;
@@ -306,7 +306,7 @@ pub trait BlockExecutor {
 
 /// A helper trait encapsulating the constraints on [`BlockExecutor`] produced by the
 /// [`BlockExecutorFactory`] to avoid duplicating them in every implementation.
-pub trait BlockExecutorFor<'a, F: BlockExecutorFactory + ?Sized, DB, I = NoOpInspector>
+pub trait BlockExecutorFor<'a, F: BlockExecutorFactory + ?Sized, DB, I = CustomInspector>
 where
     Self: BlockExecutor<
         Evm = <F::EvmFactory as EvmFactory>::Evm<&'a mut State<DB>, I>,
