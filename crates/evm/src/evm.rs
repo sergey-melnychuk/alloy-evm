@@ -230,63 +230,6 @@ pub trait EvmFactoryExt: EvmFactory {
     {
         TxTracer::new(self.create_evm_with_inspector(db, input, fused_inspector))
     }
-
-    /// Creates a new instance of an EVM with tracing enabled.
-    ///
-    /// This method creates an EVM with a default tracing inspector that provides
-    /// detailed execution traces. This is useful for debugging, analysis, and
-    /// understanding transaction execution flow.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use alloy_evm::{EthEvmFactory, EvmFactoryExt};
-    /// use revm::inspector::NoOpInspector;
-    ///
-    /// let factory = EthEvmFactory;
-    /// let db = revm::database_interface::EmptyDB::default();
-    /// let env = alloy_evm::EvmEnv::default();
-    ///
-    /// // Create EVM with tracing enabled (currently uses NoOpInspector as placeholder)
-    /// let mut evm = factory.create_evm_with_tracing(db, env);
-    /// ```
-    fn create_evm_with_tracing<DB: Database>(
-        &self,
-        db: DB,
-        evm_env: EvmEnv<Self::Spec>,
-    ) -> Self::Evm<DB, CustomInspector> {
-        // For now, we use NoOpInspector as a placeholder.
-        // Users can implement their own inspector or use create_evm_with_inspector
-        // with a custom inspector that provides the tracing functionality they need.
-        self.create_evm_with_inspector(db, evm_env, CustomInspector {})
-    }
-
-    /// Creates a new instance of an EVM with a custom inspector.
-    ///
-    /// This is a convenience method that delegates to `create_evm_with_inspector`.
-    /// It provides a cleaner API for users who want to create an EVM with a specific inspector.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use alloy_evm::{EthEvmFactory, EvmFactoryExt};
-    /// use revm::inspector::NoOpInspector;
-    ///
-    /// let factory = EthEvmFactory;
-    /// let db = revm::database_interface::EmptyDB::default();
-    /// let env = alloy_evm::EvmEnv::default();
-    ///
-    /// // Create EVM with a custom inspector
-    /// let mut evm = factory.create_evm_with_custom_inspector(db, env, NoOpInspector {});
-    /// ```
-    fn create_evm_with_custom_inspector<DB: Database, I: Inspector<Self::Context<DB>>>(
-        &self,
-        db: DB,
-        evm_env: EvmEnv<Self::Spec>,
-        inspector: I,
-    ) -> Self::Evm<DB, I> {
-        self.create_evm_with_inspector(db, evm_env, inspector)
-    }
 }
 
 impl<T: EvmFactory> EvmFactoryExt for T {}

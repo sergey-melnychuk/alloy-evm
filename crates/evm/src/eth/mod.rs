@@ -191,8 +191,8 @@ where
         // NOTE: We assume that only the contract storage is modified. Revm currently marks the
         // caller and block beneficiary accounts as "touched" when we do the above transact calls,
         // and includes them in the result.
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));        // We're doing this state cleanup to make sure that changeset only includes the changed
+        // 
+        // We're doing this state cleanup to make sure that changeset only includes the changed
         // contract storage.
         if let Ok(res) = &mut res {
             res.state.retain(|addr, _| *addr == contract);
