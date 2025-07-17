@@ -241,59 +241,142 @@ pub struct EthEvmFactory;
 #[derive(Debug)]
 pub struct CustomInspector;
 
+/*
+OPCODE-LEVEL TRACING:
+
+Reference:
+https://github.com/paradigmxyz/revm-inspectors/blob/main/src/tracing/mod.rs#L538
+
+let tracing_config = TracingInspectorConfig::all();
+let mut inspector = TracingInspector::new(tracing_config);
+
+let mut evm = evm.with_inspector(&mut inspector);
+let ret = evm.inspect_tx(env)?;
+evm.commit(res.state.clone());
+
+let frame = evm
+    .inspector()
+    .clone()
+    .with_transaction_gas_used(res.result.gas_used())
+    .geth_builder()
+    .geth_traces(
+        res.result.gas_used(),
+        res.result.output().cloned().unwrap_or_default(),
+        GethDefaultTracingOptions::default()
+            .with_enable_memory(true)
+            .with_enable_return_data(true));
+*/
+
+/*
+CALL-LEVEL TRACING:
+
+let mut inspector = {
+    let call_config = CallConfig::default().with_log();
+    let flatcall_config = FlatCallConfig::default().parity_errors();
+    let prestate_config = PreStateConfig {
+        diff_mode: Some(true),
+        ..Default::default()
+    };
+    let config = MuxConfig(HashMap::from_iter([
+        (
+            GethDebugBuiltInTracerType::PreStateTracer,
+            Some(GethDebugTracerConfig(serde_json::to_value(
+                prestate_config,
+            )?)),
+        ),
+        (
+            GethDebugBuiltInTracerType::CallTracer,
+            Some(GethDebugTracerConfig(serde_json::to_value(call_config)?)),
+        ),
+        (
+            GethDebugBuiltInTracerType::FlatCallTracer,
+            Some(GethDebugTracerConfig(serde_json::to_value(
+                flatcall_config,
+            )?)),
+        ),
+    ]));
+    MuxInspector::try_from_config(config.clone())?
+};
+
+let mut evm = evm.with_inspector(&mut inspector);
+let res = evm.inspect_tx(env)?;
+evm.commit(res.state.clone());
+
+let (ctx, inspector) = evm.ctx_inspector();
+let frame = inspector.try_into_mux_frame(&res, ctx.db_ref(), tx.info())?;
+*/
+
+#[allow(unused_variables)]
 impl<CTX, INTR: InterpreterTypes> Inspector<CTX, INTR> for CustomInspector
 {
-    fn initialize_interp(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX) {
+    fn initialize_interp(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
         #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: initialize_interp")));
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: init")));
+        }
     }
 
-    fn step(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX) {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: step")));
+    fn step(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: step")));
+        }
     }
 
-    fn step_end(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX) {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: step_end")));
+    fn step_end(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: step_end")));
+        }
     }
 
-    #[inline]
-    fn log(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX, _log: Log) {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: log")));
+    fn log(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX, _: Log) {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: log")));
+        }
     }
 
-    fn call(&mut self, _context: &mut CTX, _inputs: &mut CallInputs) -> Option<CallOutcome> {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call")));
+    fn call(&mut self, ctx: &mut CTX, ins: &mut CallInputs) -> Option<CallOutcome> {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call")));
+        }
         None
     }
 
-    fn call_end(&mut self, _context: &mut CTX, _inputs: &CallInputs, _outcome: &mut CallOutcome) {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call_end")));
+    fn call_end(&mut self, ctx: &mut CTX, ins: &CallInputs, out: &mut CallOutcome) {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call_end")));
+        }
     }
 
-    fn create(&mut self, _context: &mut CTX, _inputs: &mut CreateInputs) -> Option<CreateOutcome> {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: create")));
+    fn create(&mut self, ctx: &mut CTX, ins: &mut CreateInputs) -> Option<CreateOutcome> {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: create")));
+        }
         None
     }
 
     fn create_end(
         &mut self,
-        _context: &mut CTX,
-        _inputs: &CreateInputs,
-        _outcome: &mut CreateOutcome,
+        ctx: &mut CTX,
+        ins: &CreateInputs,
+        out: &mut CreateOutcome,
     ) {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: create_end")));
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: create_end")));
+        }
     }
 
-    fn selfdestruct(&mut self, _contract: Address, _target: Address, _value: U256) {
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: selfdestruct")));
+    fn selfdestruct(&mut self, contract: Address, target: Address, value: U256) {
+        #[cfg(feature = "live-tracing")] 
+        {
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: selfdestruct contract={contract:?} target={target:?} value={value:?}")));
+        }
     }
 }
 
