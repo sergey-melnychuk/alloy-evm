@@ -10,7 +10,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use alloy_evm::{precompiles::PrecompilesMap, Database, Evm, EvmEnv, EvmFactory};
+use alloy_evm::{eth::CustomInspector, precompiles::PrecompilesMap, Database, Evm, EvmEnv, EvmFactory};
 use alloy_primitives::{Address, Bytes, TxKind, U256};
 use core::{
     fmt::Debug,
@@ -25,7 +25,7 @@ use revm::{
     context::{BlockEnv, TxEnv},
     context_interface::result::{EVMError, ResultAndState},
     handler::{instructions::EthInstructions, PrecompileProvider},
-    inspector::NoOpInspector,
+    // inspector::NoOpInspector,
     interpreter::{interpreter::EthInterpreter, InterpreterResult},
     Context, ExecuteEvm, InspectEvm, Inspector,
 };
@@ -238,14 +238,14 @@ impl EvmFactory for OpEvmFactory {
         &self,
         db: DB,
         input: EvmEnv<OpSpecId>,
-    ) -> Self::Evm<DB, NoOpInspector> {
+    ) -> Self::Evm<DB, CustomInspector> {
         let spec_id = input.cfg_env.spec;
         OpEvm {
             inner: Context::op()
                 .with_db(db)
                 .with_block(input.block_env)
                 .with_cfg(input.cfg_env)
-                .build_op_with_inspector(NoOpInspector {})
+                .build_op_with_inspector(CustomInspector {})
                 .with_precompiles(PrecompilesMap::from_static(
                     OpPrecompiles::new_with_spec(spec_id).precompiles(),
                 )),

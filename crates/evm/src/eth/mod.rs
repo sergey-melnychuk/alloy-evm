@@ -2,7 +2,7 @@
 
 use crate::{env::EvmEnv, evm::EvmFactory, precompiles::PrecompilesMap, Database, Evm};
 use alloc::vec::Vec;
-use alloy_primitives::{Address, Bytes, TxKind, U256};
+use alloy_primitives::{Address, Bytes, Log, TxKind, U256};
 use core::{
     fmt::Debug,
     ops::{Deref, DerefMut},
@@ -11,8 +11,8 @@ use revm::{
     context::{BlockEnv, CfgEnv, Evm as RevmEvm, TxEnv},
     context_interface::result::{EVMError, HaltReason, ResultAndState},
     handler::{instructions::EthInstructions, EthFrame, EthPrecompiles, PrecompileProvider},
-    inspector::NoOpInspector,
-    interpreter::{interpreter::EthInterpreter, InterpreterResult},
+    // inspector::NoOpInspector,
+    interpreter::{interpreter::EthInterpreter, CallInputs, CallOutcome, CreateInputs, CreateOutcome, Interpreter, InterpreterResult, InterpreterTypes},
     precompile::{PrecompileSpecId, Precompiles},
     primitives::hardfork::SpecId,
     Context, ExecuteEvm, InspectEvm, Inspector, MainBuilder, MainContext,
@@ -191,8 +191,8 @@ where
         // NOTE: We assume that only the contract storage is modified. Revm currently marks the
         // caller and block beneficiary accounts as "touched" when we do the above transact calls,
         // and includes them in the result.
-        //
-        // We're doing this state cleanup to make sure that changeset only includes the changed
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));        // We're doing this state cleanup to make sure that changeset only includes the changed
         // contract storage.
         if let Ok(res) = &mut res {
             res.state.retain(|addr, _| *addr == contract);
@@ -237,6 +237,66 @@ where
 #[non_exhaustive]
 pub struct EthEvmFactory;
 
+/// Custom inspector
+#[derive(Debug)]
+pub struct CustomInspector;
+
+impl<CTX, INTR: InterpreterTypes> Inspector<CTX, INTR> for CustomInspector
+{
+    fn initialize_interp(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: initialize_interp")));
+    }
+
+    fn step(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+    }
+
+    fn step_end(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+    }
+
+    #[inline]
+    fn log(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX, _log: Log) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+    }
+
+    fn call(&mut self, _context: &mut CTX, _inputs: &mut CallInputs) -> Option<CallOutcome> {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+        None
+    }
+
+    fn call_end(&mut self, _context: &mut CTX, _inputs: &CallInputs, _outcome: &mut CallOutcome) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));    }
+
+    fn create(&mut self, _context: &mut CTX, _inputs: &mut CreateInputs) -> Option<CreateOutcome> {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+        None
+    }
+
+    fn create_end(
+        &mut self,
+        _context: &mut CTX,
+        _inputs: &CreateInputs,
+        _outcome: &mut CreateOutcome,
+    ) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+    }
+
+    fn selfdestruct(&mut self, _contract: Address, _target: Address, _value: U256) {
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: ")));
+    }
+}
+
+// MARKER:
 impl EvmFactory for EthEvmFactory {
     type Evm<DB: Database, I: Inspector<EthEvmContext<DB>>> = EthEvm<DB, I, Self::Precompiles>;
     type Context<DB: Database> = Context<BlockEnv, TxEnv, CfgEnv, DB>;
@@ -246,18 +306,31 @@ impl EvmFactory for EthEvmFactory {
     type Spec = SpecId;
     type Precompiles = PrecompilesMap;
 
-    fn create_evm<DB: Database>(&self, db: DB, input: EvmEnv) -> Self::Evm<DB, NoOpInspector> {
+    fn create_evm<DB: Database>(&self, db: DB, input: EvmEnv) -> Self::Evm<DB, CustomInspector> {
         let spec_id = input.cfg_env.spec;
+
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm] EvmFactory::create_evm")));
+
+        #[cfg(not(feature = "live-tracing"))]
+        let inspect = false;
+
+        #[cfg(feature = "live-tracing")]
+        let inspect = true;
+
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm] EvmFactory::create_evm inspect={inspect}")));
+
         EthEvm {
             inner: Context::mainnet()
                 .with_block(input.block_env)
                 .with_cfg(input.cfg_env)
                 .with_db(db)
-                .build_mainnet_with_inspector(NoOpInspector {})
+                .build_mainnet_with_inspector(CustomInspector {})
                 .with_precompiles(PrecompilesMap::from_static(Precompiles::new(
                     PrecompileSpecId::from_spec_id(spec_id),
                 ))),
-            inspect: false,
+            inspect,
         }
     }
 
