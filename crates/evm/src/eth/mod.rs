@@ -232,7 +232,25 @@ pub struct EthEvmFactory;
 
 /// Custom inspector
 #[derive(Debug)]
-pub struct CustomInspector;
+pub struct CustomInspector {
+    enabled: bool,
+}
+
+impl CustomInspector {
+    /// Create `CustomeInspector` with enabled tracing.
+    pub fn enabled() -> Self {
+        Self {
+            enabled: true,
+        }
+    }
+
+    /// Create `CustomInspector` in NOOP mode (disabled).
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+        }
+    }
+}
 
 /*
 OPCODE-LEVEL TRACING:
@@ -304,35 +322,35 @@ impl<CTX: ContextTr<Journal: JournalExt>, INTR: InterpreterTypes> Inspector<CTX,
 {
     fn initialize_interp(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
         #[cfg(feature = "live-tracing")]
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: init")));
         }
     }
 
     fn step(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: step")));
         }
     }
 
     fn step_end(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: step_end")));
         }
     }
 
     fn log(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX, _: Log) {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: log")));
         }
     }
 
     fn call(&mut self, ctx: &mut CTX, ins: &mut CallInputs) -> Option<CallOutcome> {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call {}", state.log.len())));
         }
         None
@@ -340,14 +358,14 @@ impl<CTX: ContextTr<Journal: JournalExt>, INTR: InterpreterTypes> Inspector<CTX,
 
     fn call_end(&mut self, ctx: &mut CTX, ins: &CallInputs, out: &mut CallOutcome) {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call_end {}", state.log.len())));
         }
     }
 
     fn create(&mut self, ctx: &mut CTX, ins: &mut CreateInputs) -> Option<CreateOutcome> {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: create")));
         }
         None
@@ -360,14 +378,14 @@ impl<CTX: ContextTr<Journal: JournalExt>, INTR: InterpreterTypes> Inspector<CTX,
         out: &mut CreateOutcome,
     ) {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: create_end")));
         }
     }
 
     fn selfdestruct(&mut self, contract: Address, target: Address, value: U256) {
         #[cfg(feature = "live-tracing")] 
-        {
+        if self.enabled {
             tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: selfdestruct contract={contract:?} target={target:?} value={value:?}")));
         }
     }
@@ -400,7 +418,7 @@ impl EvmFactory for EthEvmFactory {
                 .with_block(input.block_env)
                 .with_cfg(input.cfg_env)
                 .with_db(db)
-                .build_mainnet_with_inspector(CustomInspector {})
+                .build_mainnet_with_inspector(CustomInspector::enabled())
                 .with_precompiles(PrecompilesMap::from_static(Precompiles::new(
                     PrecompileSpecId::from_spec_id(spec_id),
                 ))),
