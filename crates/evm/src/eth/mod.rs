@@ -333,7 +333,7 @@ impl<CTX: ContextTr<Journal: JournalExt>, INTR: InterpreterTypes> Inspector<CTX,
     fn call(&mut self, ctx: &mut CTX, ins: &mut CallInputs) -> Option<CallOutcome> {
         #[cfg(feature = "live-tracing")] 
         {
-            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call")));
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call {}", state.log.len())));
         }
         None
     }
@@ -341,7 +341,7 @@ impl<CTX: ContextTr<Journal: JournalExt>, INTR: InterpreterTypes> Inspector<CTX,
     fn call_end(&mut self, ctx: &mut CTX, ins: &CallInputs, out: &mut CallOutcome) {
         #[cfg(feature = "live-tracing")] 
         {
-            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call_end")));
+            tracer::trace(|state| state.log.push(format!("[alloy-evm][CustomInspector]: call_end {}", state.log.len())));
         }
     }
 
