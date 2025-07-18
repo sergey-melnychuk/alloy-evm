@@ -136,7 +136,6 @@ where
         // MARKER: tracer.on_tx_state
         #[cfg(feature = "live-tracing")]
         tracer::trace(|s| s.log.push(format!("[alloy-evm] tx state: {state:#?}")));
-        eprintln!("LOOKHERE: STATE: {state:?}");
 
         if !f(&result).should_commit() {
             return Ok(None);
@@ -206,7 +205,6 @@ where
         // MARKER: tracer.on_balance
         #[cfg(feature = "live-tracing")]
         tracer::trace(|state| state.log.push(format!("[alloy-evm] BLOCK: balance increments: {balance_increments:#?}")));
-        eprintln!("LOOKHERE: BLOCK: balance increments: {balance_increments:#?}");
 
         // Irregular state change at Ethereum DAO hardfork
         if self
