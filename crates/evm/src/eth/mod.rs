@@ -8,14 +8,7 @@ use core::{
     ops::{Deref, DerefMut},
 };
 use revm::{
-    context::{BlockEnv, CfgEnv, Evm as RevmEvm, TxEnv},
-    context_interface::result::{EVMError, HaltReason, ResultAndState},
-    handler::{instructions::EthInstructions, EthFrame, EthPrecompiles, PrecompileProvider},
-    // inspector::NoOpInspector,
-    interpreter::{interpreter::EthInterpreter, CallInputs, CallOutcome, CreateInputs, CreateOutcome, Interpreter, InterpreterResult, InterpreterTypes},
-    precompile::{PrecompileSpecId, Precompiles},
-    primitives::hardfork::SpecId,
-    Context, ExecuteEvm, InspectEvm, Inspector, MainBuilder, MainContext,
+    context::{BlockEnv, CfgEnv, ContextTr, Evm as RevmEvm, TxEnv}, context_interface::result::{EVMError, HaltReason, ResultAndState}, handler::{instructions::EthInstructions, EthFrame, EthPrecompiles, PrecompileProvider}, inspector::JournalExt, interpreter::{interpreter::EthInterpreter, CallInputs, CallOutcome, CreateInputs, CreateOutcome, Interpreter, InterpreterResult, InterpreterTypes}, precompile::{PrecompileSpecId, Precompiles}, primitives::hardfork::SpecId, Context, ExecuteEvm, InspectEvm, Inspector, MainBuilder, MainContext
 };
 
 mod block;
@@ -307,7 +300,7 @@ let frame = inspector.try_into_mux_frame(&res, ctx.db_ref(), tx.info())?;
 */
 
 #[allow(unused_variables)]
-impl<CTX, INTR: InterpreterTypes> Inspector<CTX, INTR> for CustomInspector
+impl<CTX: ContextTr<Journal: JournalExt>, INTR: InterpreterTypes> Inspector<CTX, INTR> for CustomInspector
 {
     fn initialize_interp(&mut self, int: &mut Interpreter<INTR>, ctx: &mut CTX) {
         #[cfg(feature = "live-tracing")]
@@ -392,9 +385,6 @@ impl EvmFactory for EthEvmFactory {
 
     fn create_evm<DB: Database>(&self, db: DB, input: EvmEnv) -> Self::Evm<DB, CustomInspector> {
         let spec_id = input.cfg_env.spec;
-
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm] EvmFactory::create_evm")));
 
         #[cfg(not(feature = "live-tracing"))]
         let inspect = false;
