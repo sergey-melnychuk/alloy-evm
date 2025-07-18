@@ -129,9 +129,14 @@ where
             .transact(tx)
             .map_err(|err| BlockExecutionError::evm(err, tx.tx().trie_hash()))?;
 
-        // MARKER: tracer.on_tx_state
+        // MARKER: tracer.on_tx_result
         #[cfg(feature = "live-tracing")]
         tracer::trace(|state| state.log.push(format!("[alloy-evm] tx result: {result:?}")));
+
+        // MARKER: tracer.on_tx_state
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|s| s.log.push(format!("[alloy-evm] tx state: {state:?}")));
+        eprintln!("LOOKHERE: STATE: {state:?}");
 
         if !f(&result).should_commit() {
             return Ok(None);
@@ -159,13 +164,11 @@ where
         self.receipts.push(receipt.clone());
 
         // MARKER: tracer.on_tx_receipt
-        #[cfg(feature = "live-tracing")]
-        tracer::trace(|state| state.log.push(format!("[alloy-evm] tx receipt: {receipt:?}")));
+        // #[cfg(feature = "live-tracing")]
+        // tracer::trace(|state| state.log.push(format!("[alloy-evm] tx receipt: {receipt:?}")));
 
         // Commit the state changes.
         self.evm.db_mut().commit(state);
-
-        // MARKER: tracer.on_state (state hook?)
 
         Ok(Some(gas_used))
     }
@@ -201,6 +204,9 @@ where
         );
 
         // MARKER: tracer.on_balance
+        #[cfg(feature = "live-tracing")]
+        tracer::trace(|state| state.log.push(format!("[alloy-evm] BLOCK: balance increpents: {balance_increments:#?}")));
+        eprintln!("LOOKHERE: BLOCK: balance increpents: {balance_increments:#?}");
 
         // Irregular state change at Ethereum DAO hardfork
         if self
